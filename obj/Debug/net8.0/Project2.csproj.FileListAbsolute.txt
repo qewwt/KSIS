@@ -1,0 +1,14 @@
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\Project2.exe
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\Project2.deps.json
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\Project2.runtimeconfig.json
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\Project2.dll
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\Project2.pdb
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.GeneratedMSBuildEditorConfig.editorconfig
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.AssemblyInfoInputs.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.AssemblyInfo.cs
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.csproj.CoreCompileInputs.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.dll
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\refint\Project2.dll
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.pdb
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\Project2.genruntimeconfig.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\ref\Project2.dll
