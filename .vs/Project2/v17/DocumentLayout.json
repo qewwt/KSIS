@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "D:\\KSIS\\laba2\\Project2\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{5E3638CB-04BD-4752-9497-590B25B861FE}|Project2.csproj|d:\\ksis\\laba2\\project2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{5E3638CB-04BD-4752-9497-590B25B861FE}|Project2.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{5E3638CB-04BD-4752-9497-590B25B861FE}|mytraceroute.csproj|d:\\ksis\\laba2\\project2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5E3638CB-04BD-4752-9497-590B25B861FE}|mytraceroute.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -24,7 +24,7 @@
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "D:\\KSIS\\laba2\\Project2\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFgAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAA2AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-17T10:12:21.136Z",
               "EditorCaption": ""

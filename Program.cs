@@ -1,79 +1,43 @@
 ﻿using System;
-using System.Diagnostics;             
-using System.Net;                    
-using System.Net.Sockets;              
-using System.Runtime.InteropServices;  
-using System.Text;                     
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 class MyTraceroute
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    struct IcmpHeader
+    static byte ReadByte(byte[] buf, ref int offset) => buf[offset++];
+
+    static ushort ReadUInt16(byte[] buf, ref int offset)
     {
-        public byte Type;
-        public byte Code;
-        public ushort Checksum;
-        public ushort Id;
-        public ushort Seq;
+        ushort val = (ushort)((buf[offset] << 8) | buf[offset + 1]);
+        offset += 2;
+        return val;
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    struct IpHeader
+    static uint ReadUInt32(byte[] buf, ref int offset)
     {
-        public byte VerLen;
-        public byte Tos;
-        public ushort TotalLen;
-        public ushort Id;
-        public ushort Offset;
-        public byte Ttl;
-        public byte Protocol;
-        public ushort Checksum;
-        public uint SrcAddr;
-        public uint DstAddr;
+        uint val = ((uint)buf[offset] << 24) |
+                   ((uint)buf[offset + 1] << 16) |
+                   ((uint)buf[offset + 2] << 8) |
+                   buf[offset + 3];
+        offset += 4;
+        return val;
     }
 
     static void Main(string[] args)
     {
-        if (args.Length < 1)
+        if (args.Length != 1)
         {
-            Console.WriteLine("Usage: mytraceroute [-n] <host>");
+            Console.WriteLine("Usage: mytraceroute <IPv4>");
             return;
         }
 
-        bool resolve = true;
-        string target = null;
-
-        foreach (var a in args)
+        if (!IPAddress.TryParse(args[0], out IPAddress destIp) ||
+            destIp.AddressFamily != AddressFamily.InterNetwork)
         {
-            if (a == "-n")
-                resolve = false;
-            else
-                target = a;
-        }
-
-        if (target == null)
-        {
-            Console.WriteLine("No target specified");
+            Console.WriteLine("Target must be a valid IPv4 address (e.g. 8.8.8.8)");
             return;
-        }
-
-        IPAddress destIp = null;
-        if (!IPAddress.TryParse(target, out destIp))
-        {
-            var entry = Dns.GetHostEntry(target);
-            foreach (var ip in entry.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    destIp = ip;
-                    break;
-                }
-            }
-            if (destIp == null)
-            {
-                Console.WriteLine("Unable to resolve host");
-                return;
-            }
         }
 
         const int maxHops = 32;
@@ -81,15 +45,17 @@ class MyTraceroute
         const int timeoutMs = 3000;
 
         Console.WriteLine();
-        Console.WriteLine($"traceroute to {target} ({destIp}) {maxHops} hops max");
+        Console.WriteLine($"traceroute to {destIp} {maxHops} hops max");
         Console.WriteLine();
 
-        Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp);
-        sock.ReceiveTimeout = timeoutMs;
+        using Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp)
+        {
+            ReceiveTimeout = timeoutMs
+        };
 
         ushort pid = (ushort)Process.GetCurrentProcess().Id;
-
         bool reached = false;
+
         byte[] recvBuf = new byte[512];
 
         for (int ttl = 1; ttl <= maxHops && !reached; ttl++)
@@ -104,7 +70,8 @@ class MyTraceroute
 
             for (int i = 0; i < probes; i++)
             {
-                byte[] packet = BuildIcmpPacket(pid, (ushort)(ttl * 10 + i));
+                ushort seq = (ushort)(ttl * 10 + i);
+                byte[] pkt = BuildIcmpPacket(pid, seq);
 
                 FlushRecvBuffer(sock, recvBuf);
 
@@ -113,7 +80,7 @@ class MyTraceroute
                 EndPoint destEndPoint = new IPEndPoint(destIp, 0);
                 try
                 {
-                    sock.SendTo(packet, destEndPoint);
+                    sock.SendTo(pkt, destEndPoint);
                 }
                 catch
                 {
@@ -138,44 +105,77 @@ class MyTraceroute
                         break;
                     }
 
-                    if (ret <= 0) break;
+                    if (ret <= 0 || ret < 20 + 8)
+                        break;
 
                     fromEndPoint = (IPEndPoint)from;
 
-                    if (ret < Marshal.SizeOf<IpHeader>() + Marshal.SizeOf<IcmpHeader>())
-                        continue;
+                    int offset = 0;
+                    byte verLen = ReadByte(recvBuf, ref offset);
+                    ReadByte(recvBuf, ref offset);
+                    ReadUInt16(recvBuf, ref offset);
+                    ReadUInt16(recvBuf, ref offset);
+                    ReadUInt16(recvBuf, ref offset);
+                    ReadByte(recvBuf, ref offset);
+                    ReadByte(recvBuf, ref offset);
+                    ReadUInt16(recvBuf, ref offset);
+                    ReadUInt32(recvBuf, ref offset);
+                    ReadUInt32(recvBuf, ref offset);
 
-                    IpHeader ipHeader = BytesToStruct<IpHeader>(recvBuf, 0);
-                    int ipHeaderLen = (ipHeader.VerLen & 0x0F) * 4;
-                    if (ret < ipHeaderLen + Marshal.SizeOf<IcmpHeader>())
-                        continue;
+                    int ipHeaderLen = (verLen & 0x0F) * 4;
+                    if (ipHeaderLen < 20 || ipHeaderLen + 8 > ret)
+                        break;
 
-                    IcmpHeader icmpReply = BytesToStruct<IcmpHeader>(recvBuf, ipHeaderLen);
+                    offset = ipHeaderLen;
+                    byte icmpType = ReadByte(recvBuf, ref offset);
+                    byte icmpCode = ReadByte(recvBuf, ref offset);
+                    ushort icmpChecksum = ReadUInt16(recvBuf, ref offset);
+                    ushort icmpId = ReadUInt16(recvBuf, ref offset);
+                    ushort icmpSeq = ReadUInt16(recvBuf, ref offset);
 
-                    if (icmpReply.Type == 0)
+                    if (icmpType == 0)
                     {
-                        if (icmpReply.Id != pid)
+                        if (icmpId != pid)
                             continue;
 
                         gotReply = true;
                         reached = true;
                         break;
                     }
-                    else if (icmpReply.Type == 11)
+
+                    if (icmpType == 11)
                     {
-                        int innerIpOffset = ipHeaderLen + Marshal.SizeOf<IcmpHeader>();
-                        if (ret < innerIpOffset + Marshal.SizeOf<IpHeader>() + Marshal.SizeOf<IcmpHeader>())
-                            continue;
+                        int innerIpOffset = ipHeaderLen + 8;
 
-                        IpHeader innerIp = BytesToStruct<IpHeader>(recvBuf, innerIpOffset);
-                        int innerIpLen = (innerIp.VerLen & 0x0F) * 4;
-                        int innerIcmpOffset = innerIpOffset + innerIpLen;
-                        if (ret < innerIcmpOffset + Marshal.SizeOf<IcmpHeader>())
-                            continue;
+                        if (ret >= innerIpOffset + 20)
+                        {
+                            int innerOffset = innerIpOffset;
+                            byte innerVerLen = ReadByte(recvBuf, ref innerOffset);
+                            ReadByte(recvBuf, ref innerOffset);
+                            ReadUInt16(recvBuf, ref innerOffset);
+                            ReadUInt16(recvBuf, ref innerOffset);
+                            ReadUInt16(recvBuf, ref innerOffset);
+                            ReadByte(recvBuf, ref innerOffset);
+                            ReadByte(recvBuf, ref innerOffset);
+                            ReadUInt16(recvBuf, ref innerOffset);
+                            ReadUInt32(recvBuf, ref innerOffset);
+                            ReadUInt32(recvBuf, ref innerOffset);
 
-                        IcmpHeader innerIcmp = BytesToStruct<IcmpHeader>(recvBuf, innerIcmpOffset);
-                        if (innerIcmp.Id != pid)
-                            continue;
+                            int innerIpLen = (innerVerLen & 0x0F) * 4;
+                            if (innerIpLen >= 20 && innerIpOffset + innerIpLen + 8 <= ret)
+                            {
+                                innerOffset = innerIpOffset + innerIpLen;
+
+                                byte innerType = ReadByte(recvBuf, ref innerOffset);
+                                byte innerCode = ReadByte(recvBuf, ref innerOffset);
+                                ushort innerChecksum = ReadUInt16(recvBuf, ref innerOffset);
+                                ushort innerId = ReadUInt16(recvBuf, ref innerOffset);
+                                ushort innerSeq = ReadUInt16(recvBuf, ref innerOffset);
+
+                                if (innerId != pid)
+                                    continue;
+                            }
+                        }
 
                         gotReply = true;
                         break;
@@ -204,22 +204,7 @@ class MyTraceroute
 
             if (gotAnyIp && hopIp != null)
             {
-                if (resolve)
-                {
-                    try
-                    {
-                        var hostEntry = Dns.GetHostEntry(hopIp);
-                        Console.Write($"{hostEntry.HostName} ({hopIp})");
-                    }
-                    catch
-                    {
-                        Console.Write($"{hopIp}");
-                    }
-                }
-                else
-                {
-                    Console.Write($"{hopIp}");
-                }
+                Console.Write($"{hopIp}");
             }
 
             Console.WriteLine();
@@ -230,33 +215,32 @@ class MyTraceroute
         }
 
         Console.WriteLine();
-        sock.Close();
     }
 
     static byte[] BuildIcmpPacket(ushort id, ushort seq)
     {
-        int headerSize = Marshal.SizeOf<IcmpHeader>();
-        byte[] packet = new byte[headerSize + 32];
+        byte[] pkt = new byte[8 + 32];
 
-        IcmpHeader hdr = new IcmpHeader
-        {
-            Type = 8,
-            Code = 0,
-            Checksum = 0,
-            Id = id,
-            Seq = seq
-        };
+        pkt[0] = 8;
+        pkt[1] = 0;
 
-        StructToBytes(hdr, packet, 0);
+        pkt[2] = 0;
+        pkt[3] = 0;
+
+        pkt[4] = (byte)(id >> 8);
+        pkt[5] = (byte)(id & 0xFF);
+
+        pkt[6] = (byte)(seq >> 8);
+        pkt[7] = (byte)(seq & 0xFF);
 
         byte[] payload = Encoding.ASCII.GetBytes("traceroute");
-        Array.Copy(payload, 0, packet, headerSize, payload.Length);
+        Array.Copy(payload, 0, pkt, 8, payload.Length);
 
-        ushort cs = CalcChecksum(packet, 0, packet.Length);
-        hdr.Checksum = cs;
-        StructToBytes(hdr, packet, 0);
+        ushort cs = CalcChecksum(pkt, 0, pkt.Length);
+        pkt[2] = (byte)(cs >> 8);
+        pkt[3] = (byte)(cs & 0xFF);
 
-        return packet;
+        return pkt;
     }
 
     static ushort CalcChecksum(byte[] buffer, int offset, int length)
@@ -273,14 +257,10 @@ class MyTraceroute
         }
 
         if (length > 0)
-        {
             sum += (uint)(buffer[i] << 8);
-        }
 
         while ((sum >> 16) != 0)
-        {
             sum = (sum & 0xFFFF) + (sum >> 16);
-        }
 
         return (ushort)~sum;
     }
@@ -289,13 +269,11 @@ class MyTraceroute
     {
         bool oldBlocking = sock.Blocking;
         sock.Blocking = false;
+
         try
         {
-            while (true)
+            while (sock.Available > 0)
             {
-                if (sock.Available == 0)
-                    break;
-
                 EndPoint from = new IPEndPoint(IPAddress.Any, 0);
                 int ret = sock.ReceiveFrom(buffer, ref from);
                 if (ret <= 0) break;
@@ -307,39 +285,6 @@ class MyTraceroute
         finally
         {
             sock.Blocking = oldBlocking;
-        }
-    }
-
-    static void StructToBytes<T>(T str, byte[] buffer, int offset) where T : struct
-    {
-        int size = Marshal.SizeOf<T>();
-        IntPtr ptr = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.StructureToPtr(str, ptr, false);
-            Marshal.Copy(ptr, buffer, offset, size);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(ptr);
-        }
-    }
-
-    static T BytesToStruct<T>(byte[] buffer, int offset) where T : struct
-    {
-        int size = Marshal.SizeOf<T>();
-        if (offset + size > buffer.Length)
-            throw new ArgumentException("Buffer too small");
-
-        IntPtr ptr = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.Copy(buffer, offset, ptr, size);
-            return Marshal.PtrToStructure<T>(ptr);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(ptr);
         }
     }
 }

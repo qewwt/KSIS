@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("mytraceroute")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cdd3aff18459ab797fa758e22a72c8d3bdc4633f")]
 [assembly: System.Reflection.AssemblyProductAttribute("mytraceroute")]
 [assembly: System.Reflection.AssemblyTitleAttribute("mytraceroute")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

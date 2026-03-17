@@ -1,0 +1,15 @@
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\mytraceroute.exe
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\mytraceroute.deps.json
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\mytraceroute.runtimeconfig.json
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\mytraceroute.dll
+D:\KSIS\laba2\Project2\bin\Debug\net8.0\mytraceroute.pdb
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.GeneratedMSBuildEditorConfig.editorconfig
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.AssemblyInfoInputs.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.AssemblyInfo.cs
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.csproj.CoreCompileInputs.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.sourcelink.json
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.dll
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\refint\mytraceroute.dll
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.pdb
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\mytraceroute.genruntimeconfig.cache
+D:\KSIS\laba2\Project2\obj\Debug\net8.0\ref\mytraceroute.dll
